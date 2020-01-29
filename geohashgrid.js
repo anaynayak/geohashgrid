@@ -15,10 +15,10 @@ var map, zoomSpan, extentsSpan,
 function initialize() {
 	zoomSpan = document.getElementById('zoom');
 	extentsSpan = document.getElementById('extents');
-
+	var [lat, lng, zoom] = getHash()
 	map = new google.maps.Map(document.getElementById('map'), {
-		zoom: defaults.zoom,
-		center: new google.maps.LatLng(-27.593691984693564, -48.56170233339071),
+		zoom: zoom,
+		center: new google.maps.LatLng(lat, lng),
 		panControl: false,
 		streetViewControl: false
 	});
@@ -44,8 +44,17 @@ function updateBounds() {
 
 function mapIdle() {
 	drawGrid();
+	updateHash(map.getCenter(), map.getZoom())
 }
 
+function getHash() {
+	var [lat, lng, zoom] = (window.location.hash || `@-27.593691,-48.5617,6z`).replace('#', '').replace('@','').replace('z', '').split(",")
+	return [parseFloat(lat), parseFloat(lng), parseInt(zoom)]
+}
+
+function updateHash(center, zoom) {
+	window.location.hash = `@${center.toUrlValue()},${zoom}z`
+}
 function eraseGrid() {
 	for (var i = 0; i < gridParts.length; i++) {
 		gridParts[i].setMap(null);
