@@ -15,10 +15,15 @@ var map, zoomSpan, extentsSpan,
 function initialize() {
 	zoomSpan = document.getElementById('zoom');
 	extentsSpan = document.getElementById('extents');
-	var [lat, lng, zoom] = getHash()
+	var [lat, lon, zoom] = getHash()
+	var geohashes = getGeoHashes()
+	if (geohashes.length > 0) {
+		console.log(geohashes)
+		var {lat, lon} = Geohash.decode(geohashes[0])
+	}
 	map = new google.maps.Map(document.getElementById('map'), {
 		zoom: zoom,
-		center: new google.maps.LatLng(lat, lng),
+		center: new google.maps.LatLng(lat, lon),
 		panControl: false,
 		streetViewControl: false
 	});
@@ -45,6 +50,14 @@ function updateBounds() {
 function mapIdle() {
 	drawGrid();
 	updateHash(map.getCenter(), map.getZoom())
+}
+
+function getGeoHashes(length=100) {
+	const urlParams = new URLSearchParams(window.location.search);
+	if (urlParams.get("geohash")) {
+		return urlParams.get("geohash").split(",").map(x => x.substr(0, length))
+	}
+	return []
 }
 
 function getHash() {
@@ -95,19 +108,28 @@ function drawGrid() {
 }
 
 function drawBox(hash) {
+	var hashes = getGeoHashes(hash.length)
+	var highlight = {}
+	if (hashes.includes(hash)) {
+		highlight = {
+			strokeColor: '#db1662',
+			strokeWeight: 2,
+		}
+	}
 	var b = Geohash.bounds(hash),
 		gb = new google.maps.LatLngBounds(
 			new google.maps.LatLng(b.sw.lat, b.sw.lon),
 			new google.maps.LatLng(b.ne.lat, b.ne.lon)),
-		rect = new google.maps.Rectangle({
+		rect = new google.maps.Rectangle(Object.assign({
 			map: map,
 			bounds: gb,
+		},{
 			strokeColor: '#3333AA',
 			strokeOpacity: 0.8,
 			strokeWeight: 1,
 			fillColor: '#222222',
 			fillOpacity: 0.1
-		}),
+		}, highlight)),
 		labelWidth = hash.length * 6 + 4,
 		marker = new MarkerWithLabel({
 			map: map,
